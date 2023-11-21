@@ -1,80 +1,127 @@
 import React, { useState } from 'react';
-import TagView from './components/List';
+import './App.css'; // Add your CSS styles here
+import { useTable } from 'react-table';
 
-const initialTree = {
-   name: 'root',
-  children: [
-    {
-      name:  'child1',
-      children: [
-        { name: 'child1-child1', data: 'c1-c1 Hello' },
-        { name: 'child1-child2', data: 'c1-c2 JS' },
-      ],
-    },
-    { name: 'child2', data: 'c2 World' },
-  ],
-};
+function DataTable({ data }) {
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: 'Sn',
+        accessor: 'sn',
+      },
+      {
+        Header: 'Patient Name',
+        accessor: 'patientName',
+      },
+      {
+        Header: 'Doctor Name',
+        accessor: 'doctorName',
+      },
+      {
+        Header: 'Hospital Name',
+        accessor: 'hospitalName',
+      },
+      {
+        Header: 'Booking Status',
+        accessor: 'bookingStatus',
+      },
+      {
+        Header: 'Action',
+        accessor: 'action',
+        Cell: ({ row }) => (
+          <button onClick={() => handleViewDetails(row.original)}>View Details</button>
+        ),
+      },
+    ],
+    []
+  );
 
-const App = () => {
-  const [tree, setTree] = useState(initialTree);
-  const [exportedTree, setExportedTree] = useState('');
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    rows,
+    prepareRow,
+  } = useTable({
+    columns,
+    data,
+  });
 
-  const handleAddChild = (parentTag) => {
-    const newChild = { name: 'New Child', data: 'Data' };
-    if (!parentTag.children) {
-      parentTag.children = [];
-    }
-    parentTag.children.push(newChild);
-    setTree({ ...tree });
-  };
+  const [selectedRowDetails, setSelectedRowDetails] = useState(null);
 
-  const handleUpdateTag = (tagToUpdate, newData) => {
-    const updatedTree = updateTagInTree(tree, tagToUpdate, newData);
-    setTree(updatedTree);
-  };
-
-  const updateTagInTree = (root, tagToUpdate, newData) => {
-    if (root === tagToUpdate) {
-      return { ...root, ...newData };
-    }
-
-    if (root.children) {
-      const updatedChildren = root.children.map((child) => updateTagInTree(child, tagToUpdate, newData));
-      return { ...root, children: updatedChildren };
-    }
-
-    return root;
-  };
-
-  const handleDeleteTag = (tagToDelete) => {
-    const updatedTree = deleteTagFromTree(tree, tagToDelete);
-    setTree(updatedTree);
-  };
-
-  const deleteTagFromTree = (root, tagToDelete) => {
-    if (root.children) {
-      const updatedChildren = root.children.filter((child) => child !== tagToDelete);
-      return { ...root, children: updatedChildren };
-    }
-
-    return root;
-  };
-
-  const handleExport = () => {
-    const exportedTree = JSON.stringify(tree, ['name', 'children', 'data']);
-    setExportedTree(exportedTree);
+  const handleViewDetails = (data) => {
+    setSelectedRowDetails(data);
   };
 
   return (
-    <div className="App">
-      <h1 style={{justifyItems:"center",justifyContent:"center",display:"flex",color:"Highlight"}}>Tag Trees</h1>
-      <div style={{marginBottom:"12px",padding:"56px"}}>
-      <TagView className="tag-content" style={{margin:"10px"}} tag={tree} onAddChild={handleAddChild} onUpdateTag={handleUpdateTag} onDelete={handleDeleteTag} />
-      <button  style={{margin:"14px",backgroundColor:"blue",color:"white",borderRadius:"9px"}}onClick={handleExport}>Export</button>
-      {exportedTree && <pre>{exportedTree}</pre>}
-      </div>
+    <div>
+      <table {...getTableProps()} className="table">
+        <thead>
+          {headerGroups.map((headerGroup) => (
+            <tr {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map((column) => (
+                <th {...column.getHeaderProps()}>{column.render('Header')}</th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody {...getTableBodyProps()}>
+          {rows.map((row) => {
+            prepareRow(row);
+            return (
+              <tr {...row.getRowProps()}>
+                {row.cells.map((cell) => {
+                  return (
+                    <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {selectedRowDetails && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Details</h2>
+            <p>Patient Name: {selectedRowDetails.patientName}</p>
+            <p>Doctor Name: {selectedRowDetails.doctorName}</p>
+            <p>Hospital Name: {selectedRowDetails.hospitalName}</p>
+            <p>Booking Status: {selectedRowDetails.bookingStatus}</p>
+            <button onClick={() => setSelectedRowDetails(null)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
+}
+
+function App() {
+  const data = [
+    {
+      sn: 1,
+      patientName: 'John Doe',
+      doctorName: 'Dr. Smith',
+      hospitalName: 'City Hospital',
+      bookingStatus: 'Confirmed',
+    },
+    {
+      sn: 2,
+      patientName: 'Jane Doe',
+      doctorName: 'Dr. Johnson',
+      hospitalName: 'Community Clinic',
+      bookingStatus: 'Pending',
+    },
+    // Add more data objects here
+  ];
+
+  return (
+    <div className="App">
+      <h1>Patient Appointments</h1>
+      <DataTable data={data} />
+    </div>
+  );
+}
 
 export default App;
